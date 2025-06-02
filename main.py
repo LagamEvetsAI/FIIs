@@ -23,3 +23,9 @@ def get_dy():
         return jsonify({"ativo": ativo.upper(), "dy_ultimo": dy.strip()})
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
+
+# 👇 Esta parte garante que o Render saiba que o app está rodando
+import os
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
