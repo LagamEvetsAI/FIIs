@@ -1,8 +1,3 @@
-from flask import Flask, request, jsonify
-import yfinance as yf
-
-app = Flask(__name__)
-
 @app.route('/dy')
 def get_dy():
     ativo = request.args.get("ativo", "").upper()
@@ -12,16 +7,27 @@ def get_dy():
     try:
         ticker = yf.Ticker(ativo)
         info = ticker.info
-        dy = info.get("dividendYield")
 
-        if dy is None:
-            return jsonify({"ativo": ativo, "dy_ultimo": "Não disponível"})
+        preco_atual = info.get("regularMarketPrice")
+        ultimo_dividendo = info.get("lastDividendValue")
 
-        return jsonify({"ativo": ativo, "dy_ultimo": f"{dy * 100:.2f}%"})
+        if preco_atual is None or ultimo_dividendo is None:
+            return jsonify({
+                "ativo": ativo,
+                "dy_mensal": "Não disponível",
+                "dy_anualizado": info.get("dividendYield")
+            })
+
+        dy_mensal = (ultimo_dividendo / preco_atual) * 100
+        dy_anualizado = info.get("dividendYield")
+
+        return jsonify({
+            "ativo": ativo,
+            "dy_mensal": f"{dy_mensal:.2f}%",
+            "dy_anualizado": f"{dy_anualizado * 100:.2f}%" if dy_anualizado else "Não disponível",
+            "ultimo_dividendo": f"R$ {ultimo_dividendo:.2f}",
+            "preco_atual": f"R$ {preco_atual:.2f}"
+        })
+
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
-
-import os
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
